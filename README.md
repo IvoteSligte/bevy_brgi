@@ -1,0 +1,1 @@
+Batched Rasterized Global Illumination
