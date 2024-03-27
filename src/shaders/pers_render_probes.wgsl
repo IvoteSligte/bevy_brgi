@@ -3,6 +3,9 @@
 @binding(0)
 var<uniform> param: Params;
 
+@binding(1)
+var<storage,read> probeColors: array<ProbeColorData>;
+
 struct VertexOutput {
     @builtin(position) clip_pos: vec4<f32>,
     @location(0) vertex: Vertex,
@@ -17,18 +20,15 @@ fn vert_main(@builtin(vertex_index) vertex_index: u32, @location(0) vertex: Prob
     out.clip_pos = param.pers_world_to_clip * vec4<f32>(vertex.position, 1.0);
 }
 
-struct FragmentOutput {
-    @location(0) probe: vec4<u32>,
-    @location(4) probeIndex: u32,
-}
-
+// TODO: backface culling
 @fragment
 fn frag_main(
     @builtin(position) clip_in: vec4<f32>,
     @builtin(front_facing) front_facing: bool,
-    @location(0) vertex: Probe
-    @location(4) probeIndex: u32,
-) -> FragmentOutput {
-    return packIntersection(vertex.position, vertex.normal_material);
+    @location(0) probeIndex: u32,
+) -> @location(0) vec4<f32> {
+    let color = extractProbeColorDataColor(probeColors[probeIndex]);
+
+    return vec4<f32>(color, probeIndex);
 }
 

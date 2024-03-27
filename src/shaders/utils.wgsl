@@ -35,6 +35,15 @@ struct Material {
 //     normal_material: u32,
 // }
 
+fn extractProbeColorDataColor(data: ProbeColorData) -> vec3<f32> {
+    var color: vec3<f32>;
+
+    color.rg = unpack2x16float(data.colorRG);
+    color.b = unpack2x16float(data.colorB_material).x;
+
+    return color;
+}
+
 fn packIntersection(position: vec3<f32>, normal_material: u32) -> vec4<u32> {
     return vec4<u32>(bitcast<vec3<u32>>(position), normal_material);
 }
