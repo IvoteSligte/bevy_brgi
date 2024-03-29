@@ -1,3 +1,4 @@
+#import brgi::utils
 
 @binding(0)
 var<storage,read> inputs: array<u32>;
@@ -5,11 +6,11 @@ var<storage,read> inputs: array<u32>;
 @binding(1)
 var<storage,write> outputs: array<u32>;
 
-const workgroup_len: u32 = 32;
+var<workgroup> sums: array<u32,WORKGROUP_LEN>;
 
 // sklanksy prefix sum
-@compute @workgroup_size(workgroup_len)
-fn main(@builtin(global_index) gi: vec3<u32>, @builtin(local_index) li : vec3<u32>) {
+@compute @workgroup_size(WORKGROUP_LEN)
+fn main(@builtin(global_index) gi: vec3<u32>, @builtin(local_index) li: vec3<u32>) {
     let gi: u32 = gi.x;
     let li: u32 = li.x;
 

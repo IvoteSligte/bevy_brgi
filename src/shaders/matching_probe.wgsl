@@ -27,14 +27,14 @@ var<storage,write> matchDistance: array<f32>;
 @binding(6)
 var<storage,write> matchIndex: array<i32>;
 
-@compute @workgroup_size(64)
-fn main(@builtin(global_invocation_id) gi : vec3<u32>) {
+@compute @workgroup_size(WORKGROUP_LEN)
+fn main(@builtin(global_invocation_id) gi: vec3<u32>) {
     let gi: u32 = gi.x;
 
     if gi >= param.probe_count {
         return;
     }
-    
+
     let tpi = transientProbeIndices[gi];
     let otherTpi = tpi ^ 1;
     let dist = distances[pix];

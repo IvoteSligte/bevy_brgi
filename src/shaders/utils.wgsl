@@ -1,5 +1,6 @@
 
 const EPSILON: f32 = 1e-4;
+const WORKGROUP_LEN: u32 = 64;
 
 struct Params {
     world_to_screen: mat3x3<f32>,

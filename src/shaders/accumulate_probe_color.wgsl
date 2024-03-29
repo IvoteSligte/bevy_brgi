@@ -36,8 +36,8 @@ fn unpackMaterial(mat: Material, diffuse: ptr<function,vec3<f32>>, emission: ptr
     *emission.gb = unpack2x16float(mat.emisGB);
 }
 
-@compute @workgroup_size(32)
-fn main(@builtin(global_invocation_id) gi : vec3<u32>, @builtin(local_invocation_index) li : u32) {
+@compute @workgroup_size(WORKGROUP_LEN)
+fn main(@builtin(global_invocation_id) gi: vec3<u32>, @builtin(local_invocation_index) li: u32) {
     let gi: u32 = gi.x;
 
     if gi >= param.probe_count {
@@ -60,7 +60,7 @@ fn main(@builtin(global_invocation_id) gi : vec3<u32>, @builtin(local_invocation
     let diffuse: vec3<f32>;
     let emission: vec3<f32>;
     unpackMaterial(matchMat, &diffuse, &emission);
-    
+
     let ti = indices[gi]; // true index
     let normal: vec3<f32> = unpack4x8snorm(probes[ti].normal).xyz;
     let coef = abs(dot(normal, param.direction));
@@ -68,7 +68,7 @@ fn main(@builtin(global_invocation_id) gi : vec3<u32>, @builtin(local_invocation
     var color;
     let material;
     unpackColorData(probeColors[ti], &color, &material);
-    
+
     color += emission * coef;
     color += matchColorData.color * diffuse * coef;
 

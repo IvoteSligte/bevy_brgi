@@ -23,10 +23,10 @@ var<storage,write> indices: array<u32>;
 @binding(6)
 var<storage,write> pixelIndices: array<u32>;
 
-@compute @workgroup_size(64)
-fn main(@builtin(global_invocation_id) gi : vec3<u32>) {
+@compute @workgroup_size(WORKGROUP_LEN)
+fn main(@builtin(global_invocation_id) gi: vec3<u32>) {
     let gi: u32 = gi.x;
-    
+
     if gi >= param.probe_count {
         return;
     }
@@ -35,17 +35,17 @@ fn main(@builtin(global_invocation_id) gi : vec3<u32>) {
     let position: vec3<f32> = probe.position;
     let normal: vec3<f32> = unpack4x8snorm(probe.normal).xyz;
     let sig: u32 = u32(dot(normal, param.direction) >= 0.0);
-    
+
     let proj = matrix * position;
     let perp = vec2<u32>(proj.xy);
     let dist = proj.z;
 
     let pix = perp.x * param.dimension + perp.y;
     let inner = atomicAdd(&innerOffsets[pix][sig], 1);
-    
+
     let outer = outerOffsets[pix][sig];
     let total = outer + inner;
-    
+
     distances[total] = dist;
     indices[total] = gi;
     pixelIndices[total] = pix;
