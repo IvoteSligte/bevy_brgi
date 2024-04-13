@@ -1,5 +1,5 @@
 [package]
-name = "brgi"
+name = "bevy_brgi"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,6 +7,22 @@ edition = "2021"
 
 [dependencies]
 bevy = "0.13"
-bevy_pbr = "0.13"
 bytemuck = "1.15"
+
+# Enable only a small amount of optimization in debug mode
+[profile.dev]
+opt-level = 1
+debug-assertions = true
+
+# Enable high optimizations for dependencies (incl. Bevy), but not for our code:
+[profile.dev.package."*"]
+opt-level = 3
+debug-assertions = true
+
+[profile.test]
+opt-level = 3
+
+[[example]]
+name = "cornell_box"
+path = "examples/cornell_box.rs"
 

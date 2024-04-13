@@ -31,7 +31,7 @@ pub mod graph {
     }
 }
 
-struct BrgiPlugin;
+pub struct BrgiPlugin;
 
 impl Plugin for BrgiPlugin {
     fn build(&self, app: &mut App) {
@@ -108,8 +108,4 @@ pub struct BrgiBundle {
     common: CommonCache,
     world: WorldCache,
     // screen: ScreenCache,
-}
-
-fn main() {
-    App::new().add_plugins((DefaultPlugins, BrgiPlugin)).run();
 }
