@@ -31,19 +31,19 @@ impl Plugin for ScreenCachePlugin {
         load_internal_asset!(
             app,
             PERS_SPAWN_INTERSECT_PROBES_SHADER_HANDLE,
-            "shaders/pers_spawn_intersect_probes.wgsl",
+            "../assets/shaders/pers_spawn_intersect_probes.wgsl",
             Shader::from_wgsl
         );
         load_internal_asset!(
             app,
             PERS_RENDER_PROBES_SHADER_HANDLE,
-            "shaders/pers_render_probes.wgsl",
+            "../assets/shaders/pers_render_probes.wgsl",
             Shader::from_wgsl
         );
         load_internal_asset!(
             app,
             PERS_RENDER_SHADER_HANDLE,
-            "shaders/pers_render.wgsl",
+            "../assets/shaders/pers_render.wgsl",
             Shader::from_wgsl
         );
 

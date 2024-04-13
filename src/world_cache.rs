@@ -34,55 +34,55 @@ impl Plugin for WorldCachePlugin {
         load_internal_asset!(
             app,
             MATCHING_PROBES_SHADER_HANDLE,
-            "shaders/matching_probes.wgsl",
+            "../assets/shaders/matching_probes.wgsl",
             Shader::from_wgsl
         );
         load_internal_asset!(
             app,
             SPAWN_INTERSECT_PROBES_SHADER_HANDLE,
-            "shaders/spawn_intersect_probes.wgsl",
+            "../assets/shaders/spawn_intersect_probes.wgsl",
             Shader::from_wgsl
         );
         load_internal_asset!(
             app,
             PREFIX_SUM_DISTRIBUTE_SHADER_HANDLE,
-            "shaders/prefix_sum_distribute.wgsl",
+            "../assets/shaders/prefix_sum_distribute.wgsl",
             Shader::from_wgsl
         );
         load_internal_asset!(
             app,
             UTILS_SHADER_HANDLE,
-            "shaders/utils.wgsl",
+            "../assets/shaders/utils.wgsl",
             Shader::from_wgsl
         );
         load_internal_asset!(
             app,
             PREFIX_SUM_REDUCE_SHADER_HANDLE,
-            "shaders/prefix_sum_reduce.wgsl",
+            "../assets/shaders/prefix_sum_reduce.wgsl",
             Shader::from_wgsl
         );
         load_internal_asset!(
             app,
             COUNT_PROBES_SHADER_HANDLE,
-            "shaders/count_probes.wgsl",
+            "../assets/shaders/count_probes.wgsl",
             Shader::from_wgsl
         );
         load_internal_asset!(
             app,
             CHECK_INTERSECT_SHADER_HANDLE,
-            "shaders/check_intersect.wgsl",
+            "../assets/shaders/check_intersect.wgsl",
             Shader::from_wgsl
         );
         load_internal_asset!(
             app,
             PROBE_DISTANCE_SHADER_HANDLE,
-            "shaders/probe_distance.wgsl",
+            "../assets/shaders/probe_distance.wgsl",
             Shader::from_wgsl
         );
         load_internal_asset!(
             app,
             ACCUMULATE_PROBE_COLOR_SHADER_HANDLE,
-            "shaders/accumulate_probe_color.wgsl",
+            "../assets/shaders/accumulate_probe_color.wgsl",
             Shader::from_wgsl
         );
         app.sub_app_mut(RenderApp)
