@@ -10,7 +10,8 @@ use bevy::{
 fn main() {
     App::new()
         .insert_resource(Msaa::Off)
-        .insert_resource(DefaultOpaqueRendererMethod::deferred())
+        // .insert_resource(DirectionalLightShadowMap { size: 4096 })
+        // .insert_resource(DefaultOpaqueRendererMethod::deferred())
         .insert_resource(ClearColor(Color::BLACK))
         .insert_resource(AmbientLight {
             color: Color::rgb(1.0, 1.0, 1.0),
@@ -18,7 +19,7 @@ fn main() {
         })
         .add_plugins((
             DefaultPlugins.set(PbrPlugin {
-                add_default_deferred_lighting_plugin: false,
+                // add_default_deferred_lighting_plugin: false,
                 ..default()
             }),
             bevy_flycam::prelude::NoCameraPlayerPlugin,
@@ -49,9 +50,14 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 far: 1000.0,
                 aspect_ratio: 1.0,
             }),
-            exposure: Exposure { ev100: 0.0 },
+            // exposure: Exposure { ev100: 0.0 },
             ..default()
         },
         bevy_flycam::prelude::FlyCam,
     ));
+
+    commands.spawn(PointLightBundle {
+        transform: Transform::from_xyz(10.0, 0.0, 0.0),
+        ..Default::default()
+    });
 }
