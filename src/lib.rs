@@ -15,8 +15,9 @@ use crate::{
     world_cache::{WorldCacheNode, WorldCachePlugin},
 };
 
-pub const MAX_PROBE_COUNT: u32 = 32 << 15; // must be a multiple of 32 for prefix sum
+pub const MAX_PROBE_COUNT: u32 = 32 << 15; // 1 million // must be a multiple of 32 for prefix sum
 pub const WORKGROUP_SIZE: u32 = 64;
+pub const MATERIAL_COUNT: u32 = 256;
 
 pub mod graph {
     use bevy::render::render_graph::{RenderLabel, RenderSubGraph};

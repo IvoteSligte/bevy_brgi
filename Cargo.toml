@@ -9,6 +9,9 @@ edition = "2021"
 bevy = "0.13"
 bytemuck = "1.15"
 
+[dev-dependencies]
+bevy_flycam = "0.13"
+
 # Enable only a small amount of optimization in debug mode
 [profile.dev]
 opt-level = 1
