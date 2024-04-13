@@ -1,3 +1,4 @@
+#define_import_path brgi::utils
 
 const EPSILON: f32 = 1e-4;
 const WORKGROUP_LEN: u32 = 64;
@@ -28,6 +29,7 @@ struct Material {
     difRG: u32,
     difB_emisR: u32,
     emisGB: u32,
+    _pad: u32,
 }
 
 // // representation of intersection, in reality it is a vec4<u32>
@@ -37,12 +39,7 @@ struct Material {
 // }
 
 fn extractProbeColorDataColor(data: ProbeColorData) -> vec3<f32> {
-    var color: vec3<f32>;
-
-    color.rg = unpack2x16float(data.colorRG);
-    color.b = unpack2x16float(data.colorB_material).x;
-
-    return color;
+    return  vec3<f32>(unpack2x16float(data.colorRG), unpack2x16float(data.colorB_material).x);
 }
 
 fn packIntersection(position: vec3<f32>, normal_material: u32) -> vec4<u32> {
@@ -57,5 +54,22 @@ fn unpackIntersection(data: vec4<u32>, position: ptr<function,vec3<f32>>, normal
 fn unpackNormalMaterial(data: u32, normal: ptr<function,vec3<f32>>, material: ptr<function,u32>) {
     *normal = unpack4x8snorm(data).xyz;
     *material = data >> 24;
+}
+
+fn packColorData(color: vec3<f32>, matIndex: u32) -> ProbeColorData {
+    var data: ProbeColorData;
+    data.colorRG = pack2x16float(color.rg);
+    data.colorB_material = pack2x16float(color.b, 0.0) | matIndex << 16;
+    return data;
+}
+
+fn unpackColorData(data: ProbeColorData, color: ptr<function,vec3<f32>>, matIndex: ptr<function,u32>) {
+    *color = vec3<f32>(unpack2x16float(data.colorRG), unpack2x16float(data.colorB_material).x);
+    *matIndex = data.colorB_material >> 16;
+}
+
+fn unpackMaterial(mat: Material, diffuse: ptr<function,vec3<f32>>, emission: ptr<function,vec3<f32>>) {
+    *diffuse = vec3<f32>(unpack2x16float(mat.difRG), unpack2x16float(mat.difB_emisR).x);
+    *emission = vec3<f32>(unpack2x16float(mat.difB_emisR).y, unpack2x16float(mat.emisGB));
 }
 

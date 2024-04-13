@@ -1,26 +1,26 @@
 #import brgi::utils
 
-@binding(0)
+@group(0) @binding(0)
 var<uniform> param: Params;
 
-@binding(1)
+@group(0) @binding(1)
 var<storage,read> probes: array<vec4<f32>>;
 
 // prefix summed offsets for every "pixel" in the orthographic image
-@binding(2)
+@group(0) @binding(2)
 var<storage,read> outerOffsets: array<vec2<u32>>;
 
 // zeroed offsets for every "pixel" to determine local index
-@binding(3)
+@group(0) @binding(3)
 var<storage,read_write> innerOffsets: array<vec2<u32>>;
 
-@binding(4)
+@group(0) @binding(4)
 var<storage,write> distances: array<f32>;
 
-@binding(5)
+@group(0) @binding(5)
 var<storage,write> indices: array<u32>;
 
-@binding(6)
+@group(0) @binding(6)
 var<storage,write> pixelIndices: array<u32>;
 
 @compute @workgroup_size(WORKGROUP_LEN)

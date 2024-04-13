@@ -1,9 +1,9 @@
 #import brgi::utils
 
-@binding(0)
+@group(0) @binding(0)
 var<uniform> param: Params;
 
-@binding(1)
+@group(0) @binding(1)
 var<storage,read> probeColors: array<ProbeColorData>;
 
 struct VertexOutput {
@@ -29,6 +29,6 @@ fn frag_main(
 ) -> @location(0) vec4<f32> {
     let color = extractProbeColorDataColor(probeColors[probeIndex]);
 
-    return vec4<f32>(color, probeIndex);
+    return vec4<f32>(color, bitcast<f32>(probeIndex));
 }
 

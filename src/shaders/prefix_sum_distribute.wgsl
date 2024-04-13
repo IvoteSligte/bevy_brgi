@@ -1,9 +1,9 @@
 #import brgi::utils
 
-@binding(0)
+@group(0) @binding(0)
 var<storage,read> inputs: array<u32>;
 
-@binding(1)
+@group(0) @binding(1)
 var<storage,read_write> outputs: array<u32>;
 
 // sklanksy prefix sum

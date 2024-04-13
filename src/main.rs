@@ -1,19 +1,22 @@
-use std::num::NonZeroU64;
-use std::sync::Arc;
-
 use bevy::prelude::*;
 use bevy::render::extract_component::{
     ExtractComponent, ExtractComponentPlugin, UniformComponentPlugin,
 };
 use bevy::render::render_graph::{RenderGraphApp, ViewNodeRunner};
-use bevy::render::render_resource::{Buffer, ShaderType, StorageBuffer};
+use bevy::render::render_resource::{AsBindGroup, ShaderType};
 use bevy::render::RenderApp;
+use world_cache::WorldCache;
 
-pub mod node;
+pub mod screen_cache;
+pub mod world_cache;
 
-use node::count_probes::*;
+use crate::{
+    screen_cache::ScreenCachePlugin,
+    world_cache::{WorldCacheNode, WorldCachePlugin},
+};
 
 pub const MAX_PROBE_COUNT: u32 = 32 << 15; // must be a multiple of 32 for prefix sum
+pub const WORKGROUP_SIZE: u32 = 64;
 
 pub mod graph {
     use bevy::render::render_graph::{RenderLabel, RenderSubGraph};
@@ -23,15 +26,8 @@ pub mod graph {
 
     #[derive(Debug, Hash, PartialEq, Eq, Clone, RenderLabel)]
     pub enum NodeBrgi {
-        CountProbes,
-        PrefixSum,
-        ProbeDistance,
-        CheckIntersect,
-        SpawnIntersectProbes,
-        PersRender,
-        PersRenderProbes,
-        PersSpawnIntersectProbes,
-        AccumulateProbeColor,
+        World,
+        Screen,
     }
 }
 
@@ -40,6 +36,8 @@ struct BrgiPlugin;
 impl Plugin for BrgiPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
+            WorldCachePlugin,
+            ScreenCachePlugin,
             ExtractComponentPlugin::<Params>::default(),
             UniformComponentPlugin::<Params>::default(),
         ));
@@ -51,10 +49,10 @@ impl Plugin for BrgiPlugin {
 
         render_app.add_render_sub_graph(graph::Brgi);
 
-        render_app.add_render_graph_node::<ViewNodeRunner<CountProbesNode>>(
+        render_app.add_render_graph_node::<ViewNodeRunner<WorldCacheNode>>(
             graph::Brgi,
-            graph::NodeBrgi::CountProbes,
-        );
+            graph::NodeBrgi::World,
+        ); // TODO: screen cache node; connect both nodes
     }
 }
 
@@ -78,32 +76,38 @@ pub struct Material {
     emis_gb: u32,
 }
 
-#[repr(C)]
 #[derive(Clone, Copy, ShaderType)]
 pub struct Probe {
     position: Vec3,
     normal_material: u32,
 }
 
-pub struct AtomicBufferBinding {
-    pub buffer: Arc<Buffer>,
-    pub offset: u64,
-    pub size: Option<NonZeroU64>,
+#[derive(Clone, Copy, ShaderType)]
+pub struct ProbeColorData {
+    color_rg: u32,
+    color_b_material: u32,
 }
-
-#[derive(Component)]
-pub struct CountBuffer(StorageBuffer<Vec<u32>>);
-
-#[derive(Resource)]
-pub struct ProbeBuffer(StorageBuffer<Vec<Probe>>);
 
 #[derive(Component)]
 pub struct BrgiMarker;
 
+#[derive(Component, AsBindGroup)]
+pub struct CommonCache {
+    #[uniform(0)]
+    params: Params,
+    #[storage(1)]
+    probe_buffer: Vec<Probe>,
+    #[storage(2)]
+    probe_color_data_buffer: Vec<ProbeColorData>,
+    #[uniform(3)]
+    material_uniform: Vec<Material>,
+}
+
 #[derive(Bundle)]
 pub struct BrgiBundle {
-    param: Params,
-    counts: CountBuffer,
+    common: CommonCache,
+    world: WorldCache,
+    // screen: ScreenCache,
 }
 
 fn main() {

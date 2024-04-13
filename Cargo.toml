@@ -7,5 +7,6 @@ edition = "2021"
 
 [dependencies]
 bevy = "0.13"
-bytemuck = "1.15.0"
+bevy_pbr = "0.13"
+bytemuck = "1.15"
 

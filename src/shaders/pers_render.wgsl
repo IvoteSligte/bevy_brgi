@@ -1,6 +1,6 @@
 #import brgi::utils
 
-@binding(0)
+@group(0) @binding(0)
 var<uniform> param: Params;
 
 struct VertexOutput {
