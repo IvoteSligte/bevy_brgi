@@ -5,8 +5,11 @@ use bevy::render::extract_component::{
 use bevy::render::render_graph::{RenderGraphApp, ViewNodeRunner};
 use bevy::render::render_resource::{AsBindGroup, ShaderType};
 use bevy::render::RenderApp;
+
+use deferred::DeferredPbrLightingPlugin;
 use world_cache::WorldCache;
 
+pub mod deferred;
 pub mod screen_cache;
 pub mod world_cache;
 
@@ -37,8 +40,9 @@ pub struct BrgiPlugin;
 impl Plugin for BrgiPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
-            WorldCachePlugin,
-            ScreenCachePlugin,
+            DeferredPbrLightingPlugin,
+            // WorldCachePlugin,
+            // ScreenCachePlugin,
             ExtractComponentPlugin::<Params>::default(),
             UniformComponentPlugin::<Params>::default(),
         ));
