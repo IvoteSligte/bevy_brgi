@@ -1,4 +1,4 @@
-use crate::{BrgiMarker, Params, WORKGROUP_SIZE};
+use crate::{BrgiCamera, Params, WORKGROUP_SIZE};
 
 use bevy::asset::load_internal_asset;
 use bevy::ecs::query::QueryItem;
@@ -18,7 +18,6 @@ const SPAWN_INTERSECT_PROBES_SHADER_HANDLE: Handle<Shader> =
     Handle::weak_from_u128(12748321941431287895);
 const PREFIX_SUM_DISTRIBUTE_SHADER_HANDLE: Handle<Shader> =
     Handle::weak_from_u128(8600298598939286931);
-const UTILS_SHADER_HANDLE: Handle<Shader> = Handle::weak_from_u128(6162463479261672493);
 const PREFIX_SUM_REDUCE_SHADER_HANDLE: Handle<Shader> =
     Handle::weak_from_u128(11327118442002064687);
 const COUNT_PROBES_SHADER_HANDLE: Handle<Shader> = Handle::weak_from_u128(10070001324747794273);
@@ -47,12 +46,6 @@ impl Plugin for WorldCachePlugin {
             app,
             PREFIX_SUM_DISTRIBUTE_SHADER_HANDLE,
             "../assets/shaders/prefix_sum_distribute.wgsl",
-            Shader::from_wgsl
-        );
-        load_internal_asset!(
-            app,
-            UTILS_SHADER_HANDLE,
-            "../assets/shaders/utils.wgsl",
             Shader::from_wgsl
         );
         load_internal_asset!(
@@ -195,7 +188,7 @@ fn init_bind_group(
 pub struct WorldCacheNode;
 
 impl ViewNode for WorldCacheNode {
-    type ViewQuery = (&'static BrgiMarker, &'static Params, &'static WorldCache);
+    type ViewQuery = (&'static BrgiCamera, &'static Params, &'static WorldCache);
 
     fn run<'w>(
         &self,

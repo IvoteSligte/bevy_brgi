@@ -3,20 +3,17 @@ use bevy::render::extract_component::{
     ExtractComponent, ExtractComponentPlugin, UniformComponentPlugin,
 };
 use bevy::render::render_graph::{RenderGraphApp, ViewNodeRunner};
-use bevy::render::render_resource::{AsBindGroup, ShaderType};
-use bevy::render::RenderApp;
+use bevy::render::{Render, RenderApp, RenderSet};
 
+use common_cache::{CommonCache, CommonCachePlugin, Params};
 use deferred::DeferredPbrLightingPlugin;
-use world_cache::WorldCache;
 
+pub mod common_cache;
 pub mod deferred;
 pub mod screen_cache;
 pub mod world_cache;
 
-use crate::{
-    screen_cache::ScreenCachePlugin,
-    world_cache::{WorldCacheNode, WorldCachePlugin},
-};
+use crate::world_cache::WorldCacheNode;
 
 pub const DEFAULT_PROBE_COUNT: u32 = 32 << 15; // 1 million // must be a multiple of 32 for prefix sum
 pub const DEFAULT_IMAGE_LEN: u32 = 128; // resolution
@@ -42,9 +39,11 @@ impl Plugin for BrgiPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             DeferredPbrLightingPlugin,
+            CommonCachePlugin,
             // WorldCachePlugin,
             // ScreenCachePlugin,
             ExtractComponentPlugin::<Params>::default(),
+            ExtractComponentPlugin::<BrgiCamera>::default(),
             UniformComponentPlugin::<Params>::default(),
         ));
 
@@ -52,6 +51,9 @@ impl Plugin for BrgiPlugin {
             error!("Could not fetch render app.");
             return;
         };
+
+        render_app.add_systems(Render, add_render_components); // TODO: look into a better way to
+                                                               // do this (and more appropriate schedule)
 
         render_app.add_render_sub_graph(graph::Brgi);
 
@@ -62,66 +64,30 @@ impl Plugin for BrgiPlugin {
     }
 }
 
-#[derive(Clone, Component, ExtractComponent, ShaderType)]
-pub struct Params {
-    probe_count: u32, // clamped every frame
-    max_probe_count: u32,
-}
+#[derive(Component, ExtractComponent, Clone, Default)]
+pub struct BrgiCamera;
 
-#[derive(Clone, ShaderType)]
-pub struct Material {
-    dif_rg: u32,
-    dif_b_emis_r: u32,
-    emis_gb: u32,
-}
+// FIXME: make brgi components shared between render world and main world
 
-#[derive(Clone, Copy, ShaderType, Default)]
-pub struct Probe {
-    position: Vec3,
-    normal_material: u32,
-}
+fn add_render_components(
+    mut commands: Commands,
+    query: Query<
+        Entity,
+        (
+            With<BrgiCamera>,
+            Without<CommonCache /* TODO: other caches */>,
+        ),
+    >,
+) {
+    for entity in query.iter() {
+        let Some(mut entity_commands) = commands.get_entity(entity) else {
+            continue;
+        };
 
-#[derive(Clone, Copy, ShaderType, Default)]
-pub struct ProbeColorData {
-    color_rg: u32,
-    color_b_material: u32,
-}
-
-#[derive(Component)]
-pub struct BrgiMarker;
-
-#[derive(Component, AsBindGroup)]
-pub struct CommonCache {
-    #[uniform(0)]
-    params: Params,
-    #[storage(1)]
-    probe_buffer: Vec<Probe>,
-    #[storage(2)]
-    probe_color_data_buffer: Vec<ProbeColorData>,
-}
-
-impl CommonCache {
-    fn new(num_probes: usize) -> Self {
-        Self {
-            params: Params {
-                probe_count: 0,
-                max_probe_count: num_probes as u32,
-            },
-            probe_buffer: vec![Probe::default(); num_probes],
-            probe_color_data_buffer: vec![ProbeColorData::default(); num_probes],
-        }
+        entity_commands.insert((
+            CommonCache::default(),
+            // TODO: other caches
+            // TODO: non-default cache values
+        ));
     }
-}
-
-impl Default for CommonCache {
-    fn default() -> Self {
-        Self::new(DEFAULT_PROBE_COUNT as usize)
-    }
-}
-
-#[derive(Bundle, Default)]
-pub struct BrgiBundle {
-    common: CommonCache,
-    // world: WorldCache,
-    // screen: ScreenCache,
 }

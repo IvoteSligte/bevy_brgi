@@ -29,6 +29,8 @@ use bevy::render::{
     Render, RenderApp, RenderSet,
 };
 
+use crate::common_cache::{CommonCache, CommonCacheBindGroup};
+
 pub struct DeferredPbrLightingPlugin;
 
 pub const DEFERRED_LIGHTING_SHADER_HANDLE: Handle<Shader> =
@@ -149,6 +151,8 @@ impl ViewNode for DeferredOpaquePass3dPbrLightingNode {
         &'static ViewTarget,
         &'static DeferredLightingIdDepthTexture,
         &'static DeferredLightingPipeline,
+        // brgi query stuff
+        &'static CommonCacheBindGroup,
     );
 
     fn run(
@@ -164,6 +168,8 @@ impl ViewNode for DeferredOpaquePass3dPbrLightingNode {
             target,
             deferred_lighting_id_depth_texture,
             deferred_lighting_pipeline,
+            // brgi stuff
+            common_cache_bind_group,
         ): QueryItem<Self::ViewQuery>,
         world: &World,
     ) -> Result<(), NodeRunError> {
@@ -217,6 +223,7 @@ impl ViewNode for DeferredOpaquePass3dPbrLightingNode {
             ],
         );
         render_pass.set_bind_group(1, &bind_group_1, &[]);
+        render_pass.set_bind_group(2, &common_cache_bind_group.0, &[]);
         render_pass.draw(0..3, 0..1);
 
         Ok(())
@@ -227,6 +234,7 @@ impl ViewNode for DeferredOpaquePass3dPbrLightingNode {
 pub struct DeferredLightingLayout {
     mesh_pipeline: MeshPipeline,
     bind_group_layout_1: BindGroupLayout,
+    bind_group_layout_2: BindGroupLayout,
 }
 
 #[derive(Component)]
@@ -320,6 +328,7 @@ impl SpecializedRenderPipeline for DeferredLightingLayout {
             layout: vec![
                 self.mesh_pipeline.get_view_layout(key.into()).clone(),
                 self.bind_group_layout_1.clone(),
+                self.bind_group_layout_2.clone(),
             ],
             vertex: VertexState {
                 shader: DEFERRED_LIGHTING_SHADER_HANDLE,
@@ -367,16 +376,18 @@ impl SpecializedRenderPipeline for DeferredLightingLayout {
 impl FromWorld for DeferredLightingLayout {
     fn from_world(world: &mut World) -> Self {
         let render_device = world.resource::<RenderDevice>();
-        let layout = render_device.create_bind_group_layout(
+        let bind_group_layout_1 = render_device.create_bind_group_layout(
             "deferred_lighting_layout",
             &BindGroupLayoutEntries::single(
                 ShaderStages::VERTEX_FRAGMENT,
                 uniform_buffer::<PbrDeferredLightingDepthId>(false),
             ),
         );
+        let bind_group_layout_2 = CommonCache::bind_group_layout(render_device);
         Self {
             mesh_pipeline: world.resource::<MeshPipeline>().clone(),
-            bind_group_layout_1: layout,
+            bind_group_layout_1,
+            bind_group_layout_2,
         }
     }
 }

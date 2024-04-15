@@ -5,8 +5,10 @@
     pbr_deferred_functions::pbr_input_from_deferred_gbuffer,
     pbr_deferred_types::unpack_unorm3x4_plus_unorm_20_,
     lighting,
+    mesh_view_bindings::view,
     mesh_view_bindings::deferred_prepass_texture,
 }
+#import bevy_brgi::utils::{Params, Probe, frag_coord_to_index};
 
 #ifdef SCREEN_SPACE_AMBIENT_OCCLUSION
 #import bevy_pbr::mesh_view_bindings::screen_space_ambient_occlusion_texture
@@ -31,6 +33,19 @@ struct PbrDeferredLightingDepthId {
 }
 @group(1) @binding(0)
 var<uniform> depth_id: PbrDeferredLightingDepthId;
+
+// BRGI common group
+@group(2) @binding(0)
+var<uniform> params: Params;
+
+@group(2) @binding(1)
+var<storage,read_write> probe_buffer: array<Probe>;
+
+@group(2) @binding(2)
+var<storage,read_write> probe_color_buffer: array<vec4<f32>>;
+
+@group(2) @binding(3)
+var<storage,read_write> probe_g_buffer: array<vec4<u32>>;
 
 @vertex
 fn vertex(@builtin(vertex_index) vertex_index: u32) -> FullscreenVertexOutput {
@@ -60,7 +75,7 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     var output_color = vec4(0.0);
 
     // NOTE: Unlit bit not set means == 0 is true, so the true case is if lit
-    if ((pbr_input.material.flags & STANDARD_MATERIAL_FLAGS_UNLIT_BIT) == 0u) {
+    if (pbr_input.material.flags & STANDARD_MATERIAL_FLAGS_UNLIT_BIT) == 0u {
 
 #ifdef SCREEN_SPACE_AMBIENT_OCCLUSION
         let ssao = textureLoad(screen_space_ambient_occlusion_texture, vec2<i32>(in.position.xy), 0i).r;
@@ -68,12 +83,12 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
         pbr_input.diffuse_occlusion = min(pbr_input.diffuse_occlusion, ssao_multibounce);
 
         // Neubelt and Pettineo 2013, "Crafting a Next-gen Material Pipeline for The Order: 1886"
-        let NdotV = max(dot(pbr_input.N, pbr_input.V), 0.0001); 
+        let NdotV = max(dot(pbr_input.N, pbr_input.V), 0.0001);
         var perceptual_roughness: f32 = pbr_input.material.perceptual_roughness;
         let roughness = lighting::perceptualRoughnessToRoughness(perceptual_roughness);
         // Use SSAO to estimate the specular occlusion.
         // Lagarde and Rousiers 2014, "Moving Frostbite to Physically Based Rendering"
-        pbr_input.specular_occlusion =  saturate(pow(NdotV + ssao, exp2(-16.0 * roughness - 1.0)) - 1.0 + ssao);
+        pbr_input.specular_occlusion = saturate(pow(NdotV + ssao, exp2(-16.0 * roughness - 1.0)) - 1.0 + ssao);
 #endif // SCREEN_SPACE_AMBIENT_OCCLUSION
 
         output_color = pbr_functions::apply_pbr_lighting(pbr_input);
@@ -82,6 +97,11 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     }
 
     output_color = pbr_functions::main_pass_post_lighting_processing(pbr_input, output_color);
+
+    // brgi stuff
+    let probe_index = frag_coord_to_index(frag_coord.xy, view.viewport.z);
+    // output_color = vec4<f32>(probe_buffer[probe_index].position, 1.0); // DEBUG:
+    probe_buffer[probe_index] = Probe(pbr_input.world_position.xyz, pack4x8snorm(vec4<f32>(pbr_input.world_normal, 0.0)));
 
     return output_color;
 }
