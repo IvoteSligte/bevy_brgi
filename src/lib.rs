@@ -3,10 +3,12 @@ use bevy::render::extract_component::{
     ExtractComponent, ExtractComponentPlugin, UniformComponentPlugin,
 };
 use bevy::render::render_graph::{RenderGraphApp, ViewNodeRunner};
-use bevy::render::{Render, RenderApp, RenderSet};
+use bevy::render::RenderApp;
 
 use common_cache::{CommonCache, CommonCachePlugin, Params};
 use deferred::DeferredPbrLightingPlugin;
+use screen_cache::ScreenCache;
+use world_cache::WorldCache;
 
 pub mod common_cache;
 pub mod deferred;
@@ -52,42 +54,40 @@ impl Plugin for BrgiPlugin {
             return;
         };
 
-        render_app.add_systems(Render, add_render_components); // TODO: look into a better way to
-                                                               // do this (and more appropriate schedule)
-
         render_app.add_render_sub_graph(graph::Brgi);
 
-        render_app.add_render_graph_node::<ViewNodeRunner<WorldCacheNode>>(
-            graph::Brgi,
-            graph::NodeBrgi::World,
-        ); // TODO: screen cache node; connect both nodes
+        // render_app.add_render_graph_node::<ViewNodeRunner<WorldCacheNode>>(
+        //     graph::Brgi,
+        //     graph::NodeBrgi::World,
+        // ); // TODO: screen cache node; connect both nodes
     }
 }
 
-#[derive(Component, ExtractComponent, Clone, Default)]
-pub struct BrgiCamera;
+#[derive(Component, Clone, Default)]
+pub struct BrgiCamera; // TODO: properties such as number of probes and brgi ortho image resolution
 
-// FIXME: make brgi components shared between render world and main world
+impl ExtractComponent for BrgiCamera {
+    type QueryData = ();
+    type QueryFilter = (
+        Without<CommonCache>,
+        Without<ScreenCache>,
+        Without<WorldCache>,
+    );
+    type Out = BrgiRenderBundle;
 
-fn add_render_components(
-    mut commands: Commands,
-    query: Query<
-        Entity,
-        (
-            With<BrgiCamera>,
-            Without<CommonCache /* TODO: other caches */>,
-        ),
-    >,
-) {
-    for entity in query.iter() {
-        let Some(mut entity_commands) = commands.get_entity(entity) else {
-            continue;
-        };
-
-        entity_commands.insert((
-            CommonCache::default(),
-            // TODO: other caches
-            // TODO: non-default cache values
-        ));
+    fn extract_component(
+        _item: bevy::ecs::query::QueryItem<'_, Self::QueryData>,
+    ) -> Option<Self::Out> {
+        // FIXME: called multiple times for every time the deferred node run function is called?
+        Some(BrgiRenderBundle::default()) // TODO: non-default values
     }
+}
+
+/// bundle of brgi renderworld-only components
+#[derive(Bundle, Default)]
+pub struct BrgiRenderBundle {
+    camera: BrgiCamera,
+    common_cache: CommonCache,
+    // screen_cache: ScreenCache,
+    // world_cache: WorldCache,
 }

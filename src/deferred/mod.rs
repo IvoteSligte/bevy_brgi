@@ -226,6 +226,8 @@ impl ViewNode for DeferredOpaquePass3dPbrLightingNode {
         render_pass.set_bind_group(2, &common_cache_bind_group.0, &[]);
         render_pass.draw(0..3, 0..1);
 
+        println!("Rendering!!!"); // DEBUG:
+
         Ok(())
     }
 }
