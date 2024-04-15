@@ -126,21 +126,41 @@ impl FromWorld for WorldCachePipelines {
 
 #[derive(Component, AsBindGroup)]
 pub struct WorldCache {
-    // TODO:
+    // TODO: verify that the bind group layout here matches up with the shader bg layout
     #[storage(0)]
     outer_offset_buffer: Vec<u32>,
     #[storage(1)]
-    inner_count_buffer: Vec<u32>,
-    #[storage(2)]
     distance_buffer: Vec<f32>,
-    #[storage(3)]
+    #[storage(2)]
     transient_probe_index_buffer: Vec<u32>,
-    #[storage(4)]
+    #[storage(3)]
     match_distance_buffer: Vec<f32>,
-    #[storage(5)]
+    #[storage(4)]
     match_index_buffer: Vec<u32>,
-    #[storage(6)]
+    #[storage(5)]
     occlusion_bit_buffer: Vec<u32>,
+}
+
+impl WorldCache {
+    fn new(num_probes: usize, image_len: usize) -> Self {
+        Self {
+            outer_offset_buffer: vec![0; image_len],
+            distance_buffer: vec![0.0; num_probes],
+            transient_probe_index_buffer: vec![0; num_probes],
+            match_distance_buffer: vec![0.0; num_probes],
+            match_index_buffer: vec![0; num_probes],
+            occlusion_bit_buffer: vec![0; num_probes / 32],
+        }
+    }
+
+    fn clear(&mut self) {
+        self.outer_offset_buffer.clear();
+        self.distance_buffer.clear();
+        self.transient_probe_index_buffer.clear();
+        self.match_distance_buffer.clear();
+        self.match_index_buffer.clear();
+        self.occlusion_bit_buffer.clear();
+    }
 }
 
 #[derive(Component)]
@@ -150,9 +170,9 @@ fn init_bind_group(
     mut commands: Commands,
     render_device: Res<RenderDevice>,
     fallback_image: Res<FallbackImage>,
-    query: Query<(Entity, &WorldCache), Without<WorldCacheBindGroup>>,
+    mut query: Query<(Entity, &mut WorldCache), Without<WorldCacheBindGroup>>,
 ) {
-    for (entity, world_cache) in query.iter() {
+    for (entity, mut world_cache) in query.iter_mut() {
         let Ok(prepared_bind_group) = world_cache.as_bind_group(
             &WorldCache::bind_group_layout(&render_device),
             &render_device,
@@ -161,6 +181,8 @@ fn init_bind_group(
         ) else {
             continue; // TODO: error handling
         };
+
+        world_cache.clear();
 
         commands
             .get_entity(entity)

@@ -18,7 +18,8 @@ use crate::{
     world_cache::{WorldCacheNode, WorldCachePlugin},
 };
 
-pub const MAX_PROBE_COUNT: u32 = 32 << 15; // 1 million // must be a multiple of 32 for prefix sum
+pub const DEFAULT_PROBE_COUNT: u32 = 32 << 15; // 1 million // must be a multiple of 32 for prefix sum
+pub const DEFAULT_IMAGE_LEN: u32 = 128; // resolution
 pub const WORKGROUP_SIZE: u32 = 64;
 pub const MATERIAL_COUNT: u32 = 256;
 
@@ -63,15 +64,8 @@ impl Plugin for BrgiPlugin {
 
 #[derive(Clone, Component, ExtractComponent, ShaderType)]
 pub struct Params {
-    world_to_screen: Mat4,
-    dimension: u32,
     probe_count: u32, // clamped every frame
     max_probe_count: u32,
-    direction: Vec3,
-    world_to_clip: Mat4,
-    screen_to_world: Mat4,
-    pers_world_to_clip: Mat4,
-    pers_screen_to_world: Mat4,
 }
 
 #[derive(Clone, ShaderType)]
@@ -81,13 +75,13 @@ pub struct Material {
     emis_gb: u32,
 }
 
-#[derive(Clone, Copy, ShaderType)]
+#[derive(Clone, Copy, ShaderType, Default)]
 pub struct Probe {
     position: Vec3,
     normal_material: u32,
 }
 
-#[derive(Clone, Copy, ShaderType)]
+#[derive(Clone, Copy, ShaderType, Default)]
 pub struct ProbeColorData {
     color_rg: u32,
     color_b_material: u32,
@@ -104,13 +98,30 @@ pub struct CommonCache {
     probe_buffer: Vec<Probe>,
     #[storage(2)]
     probe_color_data_buffer: Vec<ProbeColorData>,
-    #[uniform(3)]
-    material_uniform: Vec<Material>,
 }
 
-#[derive(Bundle)]
+impl CommonCache {
+    fn new(num_probes: usize) -> Self {
+        Self {
+            params: Params {
+                probe_count: 0,
+                max_probe_count: num_probes as u32,
+            },
+            probe_buffer: vec![Probe::default(); num_probes],
+            probe_color_data_buffer: vec![ProbeColorData::default(); num_probes],
+        }
+    }
+}
+
+impl Default for CommonCache {
+    fn default() -> Self {
+        Self::new(DEFAULT_PROBE_COUNT as usize)
+    }
+}
+
+#[derive(Bundle, Default)]
 pub struct BrgiBundle {
     common: CommonCache,
-    world: WorldCache,
+    // world: WorldCache,
     // screen: ScreenCache,
 }
