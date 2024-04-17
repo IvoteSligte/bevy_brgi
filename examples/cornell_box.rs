@@ -7,7 +7,7 @@ use bevy::{
     pbr::{DefaultOpaqueRendererMethod, PbrPlugin},
     prelude::*,
 };
-use bevy_brgi::{BrgiCamera, BrgiPlugin};
+use bevy_brgi::{BrgiBundle, BrgiPlugin};
 
 fn main() {
     App::new()
@@ -72,6 +72,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         DepthPrepass,
         MotionVectorPrepass,
         DeferredPrepass,
-        BrgiCamera::default(),
+        BrgiBundle::default(),
     ));
 }

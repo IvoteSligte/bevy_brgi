@@ -29,7 +29,7 @@ use bevy::render::{
     Render, RenderApp, RenderSet,
 };
 
-use crate::common_cache::{CommonCache, CommonCacheBindGroup};
+use crate::common_cache::{CommonCacheBindGroup, CommonCacheLayout};
 
 pub struct DeferredPbrLightingPlugin;
 
@@ -226,8 +226,6 @@ impl ViewNode for DeferredOpaquePass3dPbrLightingNode {
         render_pass.set_bind_group(2, &common_cache_bind_group.0, &[]);
         render_pass.draw(0..3, 0..1);
 
-        println!("Rendering!!!"); // DEBUG:
-
         Ok(())
     }
 }
@@ -385,7 +383,7 @@ impl FromWorld for DeferredLightingLayout {
                 uniform_buffer::<PbrDeferredLightingDepthId>(false),
             ),
         );
-        let bind_group_layout_2 = CommonCache::bind_group_layout(render_device);
+        let bind_group_layout_2 = world.resource::<CommonCacheLayout>().0.clone();
         Self {
             mesh_pipeline: world.resource::<MeshPipeline>().clone(),
             bind_group_layout_1,

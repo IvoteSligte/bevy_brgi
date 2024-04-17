@@ -1,21 +1,18 @@
 use bevy::prelude::*;
-use bevy::render::extract_component::{
-    ExtractComponent, ExtractComponentPlugin, UniformComponentPlugin,
-};
-use bevy::render::render_graph::{RenderGraphApp, ViewNodeRunner};
+use bevy::render::extract_component::{ExtractComponent, ExtractComponentPlugin};
+use bevy::render::render_graph::RenderGraphApp;
+use bevy::render::render_resource::{Buffer, BufferInitDescriptor, BufferUsages};
+use bevy::render::renderer::RenderDevice;
 use bevy::render::RenderApp;
 
-use common_cache::{CommonCache, CommonCachePlugin, Params};
+use bytemuck::Pod;
+use common_cache::{BrgiParams, CommonCachePlugin};
 use deferred::DeferredPbrLightingPlugin;
-use screen_cache::ScreenCache;
-use world_cache::WorldCache;
 
 pub mod common_cache;
 pub mod deferred;
 pub mod screen_cache;
 pub mod world_cache;
-
-use crate::world_cache::WorldCacheNode;
 
 pub const DEFAULT_PROBE_COUNT: u32 = 32 << 15; // 1 million // must be a multiple of 32 for prefix sum
 pub const DEFAULT_IMAGE_LEN: u32 = 128; // resolution
@@ -40,13 +37,11 @@ pub struct BrgiPlugin;
 impl Plugin for BrgiPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
-            DeferredPbrLightingPlugin,
             CommonCachePlugin,
             // WorldCachePlugin,
             // ScreenCachePlugin,
-            ExtractComponentPlugin::<Params>::default(),
+            DeferredPbrLightingPlugin,
             ExtractComponentPlugin::<BrgiCamera>::default(),
-            UniformComponentPlugin::<Params>::default(),
         ));
 
         let Ok(render_app) = app.get_sub_app_mut(RenderApp) else {
@@ -63,31 +58,30 @@ impl Plugin for BrgiPlugin {
     }
 }
 
-#[derive(Component, Clone, Default)]
-pub struct BrgiCamera; // TODO: properties such as number of probes and brgi ortho image resolution
-
-impl ExtractComponent for BrgiCamera {
-    type QueryData = ();
-    type QueryFilter = (
-        Without<CommonCache>,
-        Without<ScreenCache>,
-        Without<WorldCache>,
-    );
-    type Out = BrgiRenderBundle;
-
-    fn extract_component(
-        _item: bevy::ecs::query::QueryItem<'_, Self::QueryData>,
-    ) -> Option<Self::Out> {
-        // FIXME: called multiple times for every time the deferred node run function is called?
-        Some(BrgiRenderBundle::default()) // TODO: non-default values
-    }
-}
+/// marker struct for a camera with the brgi bundle
+/// should NOT be added manually, instead add [BrgiBundle]
+#[derive(Component, Clone, Default, ExtractComponent)]
+pub struct BrgiCamera; // TODO: properties such as brgi ortho image resolution
 
 /// bundle of brgi renderworld-only components
 #[derive(Bundle, Default)]
-pub struct BrgiRenderBundle {
+pub struct BrgiBundle {
     camera: BrgiCamera,
-    common_cache: CommonCache,
-    // screen_cache: ScreenCache,
-    // world_cache: WorldCache,
+    params: BrgiParams,
+}
+
+fn init_device_buffer<T: Pod>(
+    render_device: &RenderDevice,
+    data: &[T],
+    usage: BufferUsages,
+) -> Buffer {
+    render_device.create_buffer_with_data(&BufferInitDescriptor {
+        label: None,
+        contents: bytemuck::cast_slice(data),
+        usage,
+    })
+}
+
+fn init_device_storage_buffer<T: Pod>(render_device: &RenderDevice, data: &[T]) -> Buffer {
+    init_device_buffer(render_device, data, BufferUsages::STORAGE)
 }

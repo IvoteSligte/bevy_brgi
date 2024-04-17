@@ -1,4 +1,4 @@
-use crate::{BrgiCamera, Params, WORKGROUP_SIZE};
+use crate::{common_cache::BrgiParams, BrgiCamera, WORKGROUP_SIZE};
 
 use bevy::asset::load_internal_asset;
 use bevy::ecs::query::QueryItem;
@@ -188,7 +188,11 @@ fn init_bind_group(
 pub struct WorldCacheNode;
 
 impl ViewNode for WorldCacheNode {
-    type ViewQuery = (&'static BrgiCamera, &'static Params, &'static WorldCache);
+    type ViewQuery = (
+        &'static BrgiCamera,
+        &'static BrgiParams,
+        &'static WorldCache,
+    );
 
     fn run<'w>(
         &self,

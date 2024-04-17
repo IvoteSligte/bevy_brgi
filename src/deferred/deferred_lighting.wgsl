@@ -100,8 +100,9 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
 
     // brgi stuff
     let probe_index = frag_coord_to_index(frag_coord.xy, view.viewport.z);
-    // output_color = vec4<f32>(probe_buffer[probe_index].position, 1.0); // DEBUG:
     probe_buffer[probe_index] = Probe(pbr_input.world_position.xyz, pack4x8snorm(vec4<f32>(pbr_input.world_normal, 0.0)));
+    probe_color_buffer[probe_index] = vec4<f32>(0.0);
+    probe_g_buffer[probe_index] = deferred_data; // TODO: determine if it might be advantageous to simply keep the deferred_prepass_texture for the next frame
 
     return output_color;
 }

@@ -16,7 +16,7 @@ use bevy::{
     },
 };
 
-use crate::{BrgiCamera, Params};
+use crate::{common_cache::BrgiParams, BrgiCamera};
 
 const PERS_SPAWN_INTERSECT_PROBES_SHADER_HANDLE: Handle<Shader> =
     Handle::weak_from_u128(11765195943180295704);
@@ -123,7 +123,11 @@ fn init_bind_group(
 pub struct ScreenCacheNode;
 
 impl ViewNode for ScreenCacheNode {
-    type ViewQuery = (&'static BrgiCamera, &'static Params, &'static ScreenCache);
+    type ViewQuery = (
+        &'static BrgiCamera,
+        &'static BrgiParams,
+        &'static ScreenCache,
+    );
 
     fn run<'w>(
         &self,
