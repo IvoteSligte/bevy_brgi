@@ -23,9 +23,9 @@ use crate::{init_device_storage_buffer, BrgiCamera, DEFAULT_PROBE_COUNT};
 
 const UTILS_SHADER_HANDLE: Handle<Shader> = Handle::weak_from_u128(6162463479261672493);
 
-pub struct CommonCachePlugin;
+pub struct ProbePlugin;
 
-impl Plugin for CommonCachePlugin {
+impl Plugin for ProbePlugin {
     fn build(&self, app: &mut App) {
         load_internal_asset!(
             app,
@@ -35,9 +35,9 @@ impl Plugin for CommonCachePlugin {
         );
 
         app.add_plugins((
-            ExtractComponentPlugin::<BrgiParams>::default(),
+            ExtractComponentPlugin::<ProbeUniform>::default(),
             ExtractComponentPlugin::<ProbeBuffers>::default(),
-            UniformComponentPlugin::<BrgiParams>::default(),
+            UniformComponentPlugin::<ProbeUniform>::default(),
         ))
         .add_systems(Update, add_probe_buffers);
 
@@ -47,17 +47,17 @@ impl Plugin for CommonCachePlugin {
 
     fn finish(&self, app: &mut App) {
         app.sub_app_mut(RenderApp)
-            .init_resource::<CommonCacheLayout>();
+            .init_resource::<ProbeBindGroupLayout>();
     }
 }
 
 #[derive(Clone, Component, ExtractComponent, ShaderType)]
-pub struct BrgiParams {
+pub struct ProbeUniform {
     pub probe_count: u32, // should be clamped every frame
     pub max_probe_count: u32,
 }
 
-impl BrgiParams {
+impl ProbeUniform {
     pub fn new(max_probe_count: u32) -> Self {
         Self {
             probe_count: 0,
@@ -66,12 +66,21 @@ impl BrgiParams {
     }
 }
 
-impl Default for BrgiParams {
+impl Default for ProbeUniform {
     fn default() -> Self {
         Self {
             probe_count: 0,
             max_probe_count: DEFAULT_PROBE_COUNT,
         }
+    }
+}
+
+/// shaders do not create new probes if the max probe count has been reached
+/// but the [ProbeUniform.probe_count] value should still be limited to prevent
+/// integer overflow
+fn limit_probe_count(mut query: Query<&mut ProbeUniform>) {
+    for mut probe_uniform in query.iter_mut() {
+        probe_uniform.probe_count = probe_uniform.probe_count.min(probe_uniform.max_probe_count);
     }
 }
 
@@ -113,7 +122,7 @@ impl ProbeBuffers {
 pub fn add_probe_buffers(
     mut commands: Commands,
     render_device: Res<RenderDevice>,
-    query: Query<(Entity, &BrgiParams), (With<BrgiCamera>, Without<ProbeBuffers>)>,
+    query: Query<(Entity, &ProbeUniform), (With<BrgiCamera>, Without<ProbeBuffers>)>,
 ) {
     for (entity, params) in query.iter() {
         let Some(mut entity_commands) = commands.get_entity(entity) else {
@@ -128,15 +137,15 @@ pub fn add_probe_buffers(
 }
 
 #[derive(Resource, Deref)]
-pub struct CommonCacheLayout(pub BindGroupLayout);
+pub struct ProbeBindGroupLayout(pub BindGroupLayout);
 
-impl FromWorld for CommonCacheLayout {
+impl FromWorld for ProbeBindGroupLayout {
     fn from_world(world: &mut World) -> Self {
         let entries = BindGroupLayoutEntries::sequential(
             ShaderStages::COMPUTE | ShaderStages::FRAGMENT,
             (
                 // TODO: determine if params should have a dynamic offset or not
-                uniform_buffer_sized(false, NonZeroU64::new(size_of::<BrgiParams>() as u64)),
+                uniform_buffer_sized(false, NonZeroU64::new(size_of::<ProbeUniform>() as u64)),
                 storage_buffer::<Vec<Probe>>(false),
                 storage_buffer::<Vec<ProbeColor>>(false),
                 storage_buffer::<Vec<ProbeGData>>(false),
@@ -152,14 +161,14 @@ impl FromWorld for CommonCacheLayout {
 }
 
 #[derive(Component)]
-pub struct CommonCacheBindGroup(pub BindGroup);
+pub struct ProbeBindGroup(pub BindGroup);
 
 fn init_bind_group(
     mut commands: Commands,
     render_device: Res<RenderDevice>,
-    param_uniforms: Res<ComponentUniforms<BrgiParams>>,
-    bind_group_layout: Res<CommonCacheLayout>,
-    mut query: Query<(Entity, &ProbeBuffers), Without<CommonCacheBindGroup>>,
+    param_uniforms: Res<ComponentUniforms<ProbeUniform>>,
+    bind_group_layout: Res<ProbeBindGroupLayout>,
+    mut query: Query<(Entity, &ProbeBuffers), Without<ProbeBindGroup>>,
 ) {
     let Some(param_binding) = param_uniforms.uniforms().binding() else {
         return;
@@ -180,6 +189,6 @@ fn init_bind_group(
         commands
             .get_entity(entity)
             .unwrap()
-            .insert(CommonCacheBindGroup(bind_group));
+            .insert(ProbeBindGroup(bind_group));
     }
 }

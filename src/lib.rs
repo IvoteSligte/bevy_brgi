@@ -6,11 +6,11 @@ use bevy::render::renderer::RenderDevice;
 use bevy::render::RenderApp;
 
 use bytemuck::Pod;
-use common_cache::{BrgiParams, CommonCachePlugin};
 use deferred::DeferredPbrLightingPlugin;
+use probe::{ProbePlugin, ProbeUniform};
 
-pub mod common_cache;
 pub mod deferred;
+pub mod probe;
 pub mod screen_cache;
 pub mod world_cache;
 
@@ -37,7 +37,7 @@ pub struct BrgiPlugin;
 impl Plugin for BrgiPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
-            CommonCachePlugin,
+            ProbePlugin,
             // WorldCachePlugin,
             // ScreenCachePlugin,
             DeferredPbrLightingPlugin,
@@ -67,7 +67,7 @@ pub struct BrgiCamera; // TODO: properties such as brgi ortho image resolution
 #[derive(Bundle, Default)]
 pub struct BrgiBundle {
     camera: BrgiCamera,
-    params: BrgiParams,
+    probe_uniform: ProbeUniform,
 }
 
 fn init_device_buffer<T: Pod>(
